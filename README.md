@@ -1,6 +1,6 @@
 # Brain Imaging Paper Information Extraction
 
-An automated information extraction system for brain imaging research papers using OpenAI's GPT-4o-mini API. This tool extracts structured data including imaging modalities, patient groups, white matter tracts, and subject information from neuroscience literature.
+An automated information extraction system for brain imaging research papers using OpenAI's GPT-4o-mini API. This tool extracts structured data including imaging modalities, patient groups, white matter tracts, and subject information from brain imaging research papers.
 
 ## Features
 
@@ -211,13 +211,8 @@ See `requirements.txt` for complete list.
 
 ## License
 
-[Add your license here]
 
 ## Citation
 
-If you use this tool in your research, please cite:
-[Add citation information]
-
 ## Contact
 
-For questions or issues, please contact [your contact information]
