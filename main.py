@@ -32,10 +32,11 @@ def process_full_data(paper: Dict[str, Any], processing_mode: int) -> str:
     2. Chunking: Abstract + body (split body into chunks).
     3. Title, Abstract, Keywords: Only include title, abstract, and keywords, no body.
     """
-    body = paper.get("body", "")
-    abstract = paper.get("abstract", "")
-    title = paper.get("title", "")
-    keywords = paper.get("keywords", "")
+    # Convert all fields to strings to handle NaN/float values
+    body = str(paper.get("body", "")) if paper.get("body") is not None else ""
+    abstract = str(paper.get("abstract", "")) if paper.get("abstract") is not None else ""
+    title = str(paper.get("title", "")) if paper.get("title") is not None else ""
+    keywords = str(paper.get("keywords", "")) if paper.get("keywords") is not None else ""
 
     if processing_mode == 1:
         # No chunking: Combine all data (title, abstract, keywords, and body)
@@ -94,11 +95,17 @@ def extract_one(WM_paper: Dict[str, Any], model: str = "gpt-4o-mini", processing
     else:
         chunks = [full_data] + body_chunks  # Combine full data (title, abstract, keywords) + body chunks
 
-    all_data = {
-        "imaging_modalities": [],
+    all_data = {"subjects": [],
         "patient_groups": [],
-        "whitematter_tracts": [],
-        "subjects": []
+        "imaging_modalities": [],
+        "whitematter_tracts": [],               
+        "analysis_software": [],
+        "study_type": [],
+        "diffusion_measures": [],
+        "template_space": [],
+        "results_method": [],
+        "white_integrity": [],
+        "question_of_study": [],
     }
 
     for chunk in chunks:
@@ -120,13 +127,21 @@ def extract_one(WM_paper: Dict[str, Any], model: str = "gpt-4o-mini", processing
             data = json.loads(content)
             # Aggregate the data from all chunks
             for key in all_data:
-                all_data[key].extend(data.get(key, []))
-        except Exception:
-            pass
+                    if isinstance(data.get(key), list):
+                        all_data[key].extend(data[key])
+                    elif data.get(key):  # Handle case where API returns string instead of list
+                        all_data[key].append(data[key])
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error: {e}")
+            print(f"Raw content: {content}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            print(f"Raw content: {content}")
 
     # Remove duplicates and return the final data
     for key in all_data:
-        all_data[key] = list(set(all_data[key]))
+        if isinstance(all_data[key], list):
+            all_data[key] = list(set(all_data[key]))
 
     return all_data
 
@@ -153,10 +168,17 @@ def extract_all(WM_papers: List[Dict[str, Any]],
         row = {
             "pmcid": paper.get("pmcid", ""),
             "title": paper.get("title", ""),
-            "imaging_modalities": ";".join(data.get("imaging_modalities", [])),
+            "subjects": ";".join(data.get("subjects", [])),
             "patient_groups": ";".join(data.get("patient_groups", [])),
+            "imaging_modalities": ";".join(data.get("imaging_modalities", [])),
             "whitematter_tracts": ";".join(data.get("whitematter_tracts", [])),
-            "subjects": ";".join(data.get("subjects", []))
+            "analysis_software": ";".join(data.get("analysis_software", [])),
+            "study_type": ";".join(data.get("study_type", [])),
+            "diffusion_measures": ";".join(data.get("diffusion_measures", [])),
+            "template_space": ";".join(data.get("template_space", [])),
+            "results_method": ";".join(data.get("results_method", [])),
+            "white_integrity": ";".join(data.get("white_integrity", [])),
+            "question_of_study": ";".join(data.get("question_of_study", [])),
         }
         results.append(row)
         print(f"Processed {i}/{len(WM_papers)}")
@@ -166,7 +188,7 @@ def extract_all(WM_papers: List[Dict[str, Any]],
     with open(out_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=["pmcid", "title", "imaging_modalities", "patient_groups", "whitematter_tracts", "subjects"]
+            fieldnames=["pmcid", "title","subjects", "patient_groups", "imaging_modalities", "whitematter_tracts","analysis_software","study_type","diffusion_measures","template_space","results_method","white_integrity","question_of_study"]
         )
         writer.writeheader()
         writer.writerows(results)
@@ -176,6 +198,8 @@ def extract_all(WM_papers: List[Dict[str, Any]],
     return results
 
 extract_all(whitematter_json[0:3], processing_mode=1)
+
+
 
 
 
